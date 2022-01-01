@@ -1,4 +1,4 @@
-'use strict';
+//'use strict';
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
@@ -8,6 +8,12 @@ import * as vscode from 'vscode';
 // Import the module and reference it with the alias azdata in your code below
 
 import * as azdata from 'azdata';
+
+import SchemaItem from './schemaItem';
+import SchemaTreeProvider from './SchemaTreeProvider';
+import { stringify } from 'querystring';
+import { systemDefaultPlatform } from 'azdata-test/out/util';
+import path = require('path');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -23,23 +29,64 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.commands.registerCommand('schematree.helloWorld', () => {
         // The code you place here will be executed every time your command is executed
 
-        // Display a message box to the user
-        vscode.window.showInformationMessage('Hello World!');
+        vscode.window.showInformationMessage('Loading SchemaTree from current connection...');
+
+        vscode.window.createTreeView('schemaTreeView', {
+            treeDataProvider: new SchemaTreeProvider()
+        });
+
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('schematree.showCurrentConnection', () => {
         // The code you place here will be executed every time your command is executed
 
-        // Display a message box to the user
-        azdata.connection.getCurrentConnection().then(connection => {
-            let connectionId = connection ? connection.connectionId : 'No connection found!';
-            vscode.window.showInformationMessage(connectionId);
-        }, error => {
-             console.info(error);
-        });
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand('schematree.showDefinition', (myItem: SchemaItem) => {
+        // The code you place here will be executed every time your command is executed
+
+
+
+        console.log("args:", myItem);
+
+        let myNode = myItem.objectExplorerNode;
+
+        myNode.payload = myNode.label;
+
+        getObjectDefinition(myNode.label);
     }));
 }
 
 // this method is called when your extension is deactivated
 export function deactivate() {
+}
+
+async function getObjectDefinition(objectName: string) {
+    vscode.window.showInformationMessage('Loading definition for ' + objectName);
+
+    let objectDefinitionSql = "SELECT OBJECT_DEFINITION(OBJECT_ID('" + objectName + "')) AS myDefinition;";
+
+    let conn: azdata.connection.ConnectionProfile = await azdata.connection.getCurrentConnection().then((connResult) => {
+        console.log("connection", connResult);
+        return connResult;
+    });
+
+    let connectionUri = await azdata.connection.getUriForConnection(conn.connectionId);
+
+    console.log("conn uri", connectionUri);
+
+
+
+    let qprov = azdata.dataprotocol.getProvider<azdata.QueryProvider>(conn.providerId, azdata.DataProviderType.QueryProvider);
+
+    //    await qprov.registerOnQueryComplete((queryResult) => { console.log("queryResult:", queryResult); });
+
+    let qresult = await qprov.runQueryAndReturn(connectionUri, objectDefinitionSql);
+
+    console.log("qresult", qresult.rows[0][0].displayValue);
+
+    let itemDefinition = qresult.rows[0][0].displayValue;
+
+    let doc = await azdata.queryeditor.openQueryDocument({ content: itemDefinition });
+    await azdata.queryeditor.connect(doc.uri, conn.connectionId);
 }
