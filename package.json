@@ -14,10 +14,27 @@
 	"activationEvents": [
 		"onCommand:schematree.helloWorld",
 		"onCommand:schematree.showCurrentConnection",
-		"onCommand:schematree.showDefinition"
+		"onStartupFinished"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "schematree-view-container",
+					"title": "SchemaTree",
+					"icon": "resources/schematree-icon.svg"
+				}
+			]
+		},
+		"views": {
+			"schematree-view-container": [
+				{
+					"id": "schematree-view",
+					"name": "SchemaTree"
+				}
+			]
+		},
 		"commands": [
 			{
 				"command": "schematree.helloWorld",
@@ -32,14 +49,6 @@
 				"title": "Show Definition"
 			}
 		],
-		"views": {
-			"explorer": [
-				{
-					"id": "schemaTreeView",
-					"name": "SchemaTree"
-				}
-			]
-		},
 		"menus": {
 			"view/item/context": [
 				{

@@ -1,4 +1,6 @@
-//'use strict';
+// tree icon by Mithun Raj on freeicons.io
+
+'use strict';
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
@@ -11,9 +13,6 @@ import * as azdata from 'azdata';
 
 import SchemaItem from './schemaItem';
 import SchemaTreeProvider from './SchemaTreeProvider';
-import { stringify } from 'querystring';
-import { systemDefaultPlatform } from 'azdata-test/out/util';
-import path = require('path');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -23,17 +22,25 @@ export function activate(context: vscode.ExtensionContext) {
     // This line of code will only be executed once when your extension is activated
     console.log('Congratulations, your extension "schematree" is now active!');
 
+    // connEvtListener.onConnectionEvent(() => )
+    azdata.connection.registerConnectionEventListener({
+        onConnectionEvent(eventType: azdata.connection.ConnectionEventType, ownerUri: string, profile: azdata.IConnectionProfile) {
+            try {
+                console.log("connection detected!", eventType, ownerUri, profile);
+                loadStructureForConnection();
+            } catch {
+                console.log("error on this shit");
+            }
+        }
+    });
+
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with  registerCommand
     // The commandId parameter must match the command field in package.json
     context.subscriptions.push(vscode.commands.registerCommand('schematree.helloWorld', () => {
         // The code you place here will be executed every time your command is executed
 
-        vscode.window.showInformationMessage('Loading SchemaTree from current connection...');
-
-        vscode.window.createTreeView('schemaTreeView', {
-            treeDataProvider: new SchemaTreeProvider()
-        });
+        loadStructureForConnection();
 
     }));
 
@@ -44,8 +51,6 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(vscode.commands.registerCommand('schematree.showDefinition', (myItem: SchemaItem) => {
         // The code you place here will be executed every time your command is executed
-
-
 
         console.log("args:", myItem);
 
@@ -60,6 +65,15 @@ export function activate(context: vscode.ExtensionContext) {
 // this method is called when your extension is deactivated
 export function deactivate() {
 }
+
+function loadStructureForConnection() {
+    vscode.window.showInformationMessage('Loading SchemaTree from current connection...');
+
+    vscode.window.createTreeView('schematree-view', {
+        treeDataProvider: new SchemaTreeProvider()
+    });
+}
+
 
 async function getObjectDefinition(objectName: string) {
     vscode.window.showInformationMessage('Loading definition for ' + objectName);

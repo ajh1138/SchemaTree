@@ -43,8 +43,6 @@ export default class SchemaTreeProvider implements vscode.TreeDataProvider<Schem
 	private iterateConnections = (): Thenable<SchemaItem[]> => {
 		let items: SchemaItem[] = new Array();
 
-
-
 		return azdata.objectexplorer.getActiveConnectionNodes().then((connections) => {
 			connections.map((c) => {
 				let blah: SchemaItem = new SchemaItem(c.label, vscode.TreeItemCollapsibleState.Collapsed, c, "", "");
@@ -78,11 +76,11 @@ export default class SchemaTreeProvider implements vscode.TreeDataProvider<Schem
 					procs.push(poop);
 				}
 				else if (child.nodeType === "Folder" && child.label === "Stored Procedures") {
-					this.procsFolder = new SchemaItem(child.label, vscode.TreeItemCollapsibleState.Expanded, child, "", "");
+					this.procsFolder = new SchemaItem(child.label, vscode.TreeItemCollapsibleState.Collapsed, child, "", "");
 					oldItems.push(this.procsFolder);
 				}
 				else {
-					let poop = new SchemaItem(child.label, vscode.TreeItemCollapsibleState.Expanded, child, "", "");
+					let poop = new SchemaItem(child.label, vscode.TreeItemCollapsibleState.Collapsed, child, "", "");
 					oldItems.push(poop);
 				}
 
