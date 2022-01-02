@@ -13,7 +13,8 @@
 	],
 	"activationEvents": [
 		"onCommand:schematree.helloWorld",
-		"onCommand:schematree.showCurrentConnection"
+		"onCommand:schematree.showCurrentConnection",
+		"onCommand:schematree.showDefinition"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -25,8 +26,28 @@
 			{
 				"command": "schematree.showCurrentConnection",
 				"title": "Show Current Connection"
+			},
+			{
+				"command": "schematree.showDefinition",
+				"title": "Show Definition"
 			}
-		]
+		],
+		"views": {
+			"explorer": [
+				{
+					"id": "schemaTreeView",
+					"name": "SchemaTree"
+				}
+			]
+		},
+		"menus": {
+			"view/item/context": [
+				{
+					"command": "schematree.showDefinition",
+					"when": "viewItem == proc"
+				}
+			]
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",

@@ -78,11 +78,11 @@ export default class SchemaTreeProvider implements vscode.TreeDataProvider<Schem
 					procs.push(poop);
 				}
 				else if (child.nodeType === "Folder" && child.label === "Stored Procedures") {
-					this.procsFolder = new SchemaItem(child.label, vscode.TreeItemCollapsibleState.Collapsed, child, "", "");
+					this.procsFolder = new SchemaItem(child.label, vscode.TreeItemCollapsibleState.Expanded, child, "", "");
 					oldItems.push(this.procsFolder);
 				}
 				else {
-					let poop = new SchemaItem(child.label, vscode.TreeItemCollapsibleState.Collapsed, child, "", "");
+					let poop = new SchemaItem(child.label, vscode.TreeItemCollapsibleState.Expanded, child, "", "");
 					oldItems.push(poop);
 				}
 
