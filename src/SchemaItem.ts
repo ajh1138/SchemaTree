@@ -9,16 +9,23 @@ export default class SchemaItem extends vscode.TreeItem {
 	}
 
 	constructor(
-		public readonly label: string,
-		public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-		public objectExplorerNode: azdata.objectexplorer.ObjectExplorerNode,
+		public objectName: string,
 		public schemaName: string,
-		public objectName: string
+		public itemType: string,
+		public readonly collapsibleState: vscode.TreeItemCollapsibleState
 	) {
-		super(objectExplorerNode.label, collapsibleState);
-		this.tooltip = `${objectExplorerNode.label}-foo`;
-		this.description = `${this.label}-description`;
-		//	this.objectExplorerNode = objectExplorerNode;
+		super("", collapsibleState);
+		this.tooltip = `${this.objectName}-foo`;
+		this.description = ``;
+		this.contextValue = itemType;
 
+		if (itemType === "proc" || itemType === "table") {
+			this.label = this.schemaName + '.' + this.objectName;
+		} else if (this.itemType === "schema") {
+			this.label = this.schemaName;
+		}
+		else {
+			this.label = this.objectName;
+		}
 	};
 }

@@ -14,6 +14,9 @@ import * as azdata from 'azdata';
 import SchemaItem from './schemaItem';
 import SchemaTreeProvider from './SchemaTreeProvider';
 
+
+let theItems: SchemaItem[] = new Array();
+
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -27,9 +30,11 @@ export function activate(context: vscode.ExtensionContext) {
         onConnectionEvent(eventType: azdata.connection.ConnectionEventType, ownerUri: string, profile: azdata.IConnectionProfile) {
             try {
                 console.log("connection detected!", eventType, ownerUri, profile);
-                loadStructureForConnection();
-            } catch {
-                console.log("error on this shit");
+                if (eventType === "onConnect") {
+                    loadStructureForConnection();
+                }
+            } catch (ex) {
+                console.log("error on this shizzle", ex);
             }
         }
     });
@@ -45,20 +50,13 @@ export function activate(context: vscode.ExtensionContext) {
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('schematree.showCurrentConnection', () => {
-        // The code you place here will be executed every time your command is executed
 
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('schematree.showDefinition', (myItem: SchemaItem) => {
-        // The code you place here will be executed every time your command is executed
-
         console.log("args:", myItem);
 
-        let myNode = myItem.objectExplorerNode;
-
-        myNode.payload = myNode.label;
-
-        getObjectDefinition(myNode.label);
+        getObjectDefinition(myItem.schemaName + "." + myItem.objectName);
     }));
 }
 
@@ -67,13 +65,12 @@ export function deactivate() {
 }
 
 function loadStructureForConnection() {
-    vscode.window.showInformationMessage('Loading SchemaTree from current connection...');
+    vscode.window.showInformationMessage('Loading SchemaTree for current connections...');
 
     vscode.window.createTreeView('schematree-view', {
         treeDataProvider: new SchemaTreeProvider()
     });
 }
-
 
 async function getObjectDefinition(objectName: string) {
     vscode.window.showInformationMessage('Loading definition for ' + objectName);
@@ -88,8 +85,6 @@ async function getObjectDefinition(objectName: string) {
     let connectionUri = await azdata.connection.getUriForConnection(conn.connectionId);
 
     console.log("conn uri", connectionUri);
-
-
 
     let qprov = azdata.dataprotocol.getProvider<azdata.QueryProvider>(conn.providerId, azdata.DataProviderType.QueryProvider);
 
