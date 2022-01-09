@@ -29,7 +29,6 @@ export function activate(context: vscode.ExtensionContext) {
     azdata.connection.registerConnectionEventListener({
         onConnectionEvent(eventType: azdata.connection.ConnectionEventType, ownerUri: string, profile: azdata.IConnectionProfile) {
             try {
-                console.log("connection detected!", eventType, ownerUri, profile);
                 if (eventType === "onConnect") {
                     loadStructureForConnection();
                 }
