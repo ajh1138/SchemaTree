@@ -79,7 +79,7 @@ export default class SchemaTreeProvider implements vscode.TreeDataProvider<Schem
 		let qResult = await DAL.runQueryWithConnection(itemListSql, conn);
 
 		qResult.rows.map((r) => {
-			let item = new SchemaItem(r[1].displayValue, r[0].displayValue, itemType, this.ITEM_NONE);
+			let item = new SchemaItem(r[1].displayValue, r[0].displayValue, itemType, this.ITEM_NONE, conn);
 			myItems.push(item);
 		});
 

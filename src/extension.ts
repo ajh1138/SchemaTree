@@ -55,7 +55,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.commands.registerCommand('schematree.showDefinition', (myItem: SchemaItem) => {
         console.log("args:", myItem);
 
-        getObjectDefinition(myItem.schemaName + "." + myItem.objectName);
+        getObjectDefinition(myItem.schemaName + "." + myItem.objectName, myItem.connectionProfile!);
     }));
 }
 
@@ -71,23 +71,16 @@ function loadStructureForConnection() {
     });
 }
 
-async function getObjectDefinition(objectName: string) {
+async function getObjectDefinition(objectName: string, conn: azdata.connection.ConnectionProfile) {
     vscode.window.showInformationMessage('Loading definition for ' + objectName);
 
     let objectDefinitionSql = "SELECT OBJECT_DEFINITION(OBJECT_ID('" + objectName + "')) AS myDefinition;";
-
-    let conn: azdata.connection.ConnectionProfile = await azdata.connection.getCurrentConnection().then((connResult) => {
-        console.log("connection", connResult);
-        return connResult;
-    });
 
     let connectionUri = await azdata.connection.getUriForConnection(conn.connectionId);
 
     console.log("conn uri", connectionUri);
 
     let qprov = azdata.dataprotocol.getProvider<azdata.QueryProvider>(conn.providerId, azdata.DataProviderType.QueryProvider);
-
-    //    await qprov.registerOnQueryComplete((queryResult) => { console.log("queryResult:", queryResult); });
 
     let qresult = await qprov.runQueryAndReturn(connectionUri, objectDefinitionSql);
 

@@ -12,12 +12,14 @@ export default class SchemaItem extends vscode.TreeItem {
 		public objectName: string,
 		public schemaName: string,
 		public itemType: string,
-		public readonly collapsibleState: vscode.TreeItemCollapsibleState
+		public collapsibleState: vscode.TreeItemCollapsibleState,
+		public readonly connectionProfile?: azdata.connection.ConnectionProfile
 	) {
 		super("", collapsibleState);
 		this.tooltip = `${this.objectName}-foo`;
 		this.description = ``;
 		this.contextValue = itemType;
+		this.connectionProfile = connectionProfile;
 
 		if (itemType === "proc" || itemType === "table") {
 			this.label = this.schemaName + '.' + this.objectName;
