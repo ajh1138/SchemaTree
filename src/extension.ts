@@ -59,9 +59,7 @@ export function activate(context: vscode.ExtensionContext) {
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('schematree.showDefinition', (myItem: SchemaItem) => {
-        console.log("args:", myItem);
-
-        getObjectDefinition(myItem.schemaName + "." + myItem.objectName, myItem.connectionProfile!);
+        getObjectDefinition(myItem);
     }));
 }
 
@@ -77,23 +75,32 @@ function loadStructureForConnection() {
     });
 }
 
-async function getObjectDefinition(objectName: string, conn: azdata.connection.ConnectionProfile) {
-    vscode.window.showInformationMessage('Loading definition for ' + objectName);
+async function getObjectDefinition(item: SchemaItem) {
+    let fullObjectName = item.schemaName + '.' + item.objectName;
+    vscode.window.showInformationMessage(`Loading definition for ${fullObjectName}...`);
 
-    let objectDefinitionSql = "SELECT OBJECT_DEFINITION(OBJECT_ID('" + objectName + "')) AS myDefinition;";
+    let itemDefinition = "";
 
-    let connectionUri = await azdata.connection.getUriForConnection(conn.connectionId);
+    if (item.itemType === "proc") {
+        let objectDefinitionSql = "SELECT OBJECT_DEFINITION(OBJECT_ID('" + fullObjectName + "')) AS myDefinition;";
 
-    console.log("conn uri", connectionUri);
+        let connectionUri = await azdata.connection.getUriForConnection(item.connectionProfile!.connectionId);
 
-    let qprov = azdata.dataprotocol.getProvider<azdata.QueryProvider>(conn.providerId, azdata.DataProviderType.QueryProvider);
+        console.log("conn uri", connectionUri);
 
-    let qresult = await qprov.runQueryAndReturn(connectionUri, objectDefinitionSql);
+        let qprov = azdata.dataprotocol.getProvider<azdata.QueryProvider>(item.connectionProfile!.providerId, azdata.DataProviderType.QueryProvider);
 
-    console.log("qresult", qresult.rows[0][0].displayValue);
+        let qresult = await qprov.runQueryAndReturn(connectionUri, objectDefinitionSql);
 
-    let itemDefinition = qresult.rows[0][0].displayValue;
+        console.log("qresult", qresult.rows[0][0].displayValue);
+
+        itemDefinition = qresult.rows[0][0].displayValue;
+    } else {
+        let foo = await vscode.commands.executeCommand("objectExplorer.scriptAsCreate", item);
+        console.log("script as create: ", foo);
+    }
+
 
     let doc = await azdata.queryeditor.openQueryDocument({ content: itemDefinition });
-    await azdata.queryeditor.connect(doc.uri, conn.connectionId);
+    await azdata.queryeditor.connect(doc.uri, item.connectionProfile!.connectionId);
 }

@@ -11,9 +11,14 @@ export default class SchemaItem extends vscode.TreeItem {
 		return this.children;
 	}
 
+	public getConnectionProfile(): azdata.connection.ConnectionProfile {
+		return this.connectionProfile!;
+	}
+
 	constructor(
 		public objectName: string,
 		public schemaName: string,
+		public databaseName: string,
 		public itemType: string,
 		public collapsibleState: vscode.TreeItemCollapsibleState,
 		public readonly connectionProfile?: azdata.connection.ConnectionProfile
@@ -23,6 +28,7 @@ export default class SchemaItem extends vscode.TreeItem {
 		this.description = ``;
 		this.contextValue = itemType;
 		this.connectionProfile = connectionProfile;
+		this.databaseName = databaseName;
 
 		if (itemType === "proc" || itemType === "table") {
 			this.label = this.schemaName + '.' + this.objectName;
