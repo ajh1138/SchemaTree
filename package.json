@@ -23,7 +23,7 @@
 				{
 					"id": "schematree-view-container",
 					"title": "SchemaTree",
-					"icon": "resources/schematree-icon.svg"
+					"icon": "resources/icon-schematree-main.svg"
 				}
 			]
 		},
@@ -47,6 +47,10 @@
 			{
 				"command": "schematree.showDefinition",
 				"title": "Show Definition"
+			},
+			{
+				"command": "schematree.showTreeEvent",
+				"title": "show tree event"
 			}
 		],
 		"menus": {
@@ -54,6 +58,9 @@
 				{
 					"command": "schematree.showDefinition",
 					"when": "viewItem == proc || viewItem == table"
+				},
+				{
+					"command": "schematree.showTreeEvent"
 				}
 			]
 		}

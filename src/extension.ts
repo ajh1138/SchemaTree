@@ -30,6 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
         onConnectionEvent(eventType: azdata.connection.ConnectionEventType, ownerUri: string, profile: azdata.IConnectionProfile) {
             try {
                 if (eventType === "onConnect") {
+                    console.log("connection owner:", ownerUri);
                     loadStructureForConnection();
                 }
             } catch (ex) {
@@ -46,6 +47,11 @@ export function activate(context: vscode.ExtensionContext) {
 
         loadStructureForConnection();
 
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand('schematree.showTreeEvent', (thingy) => {
+        // The code you place here will be executed every time your command is executed
+        console.log("thingy:", thingy);
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('schematree.showCurrentConnection', () => {

@@ -39,32 +39,42 @@ export default class SchemaTreeProvider implements vscode.TreeDataProvider<Schem
 	private async buildConnectionsTree(): Promise<SchemaItem[]> {
 		let items: SchemaItem[] = new Array();
 
-		let testItem = new SchemaItem("test", "test", "folder", this.ITEM_COLLAPSED);
-		items.push(testItem);
+		//	let testItem = new SchemaItem("test", "test", "folder", this.ITEM_COLLAPSED);
+		//items.push(testItem);
 
-		var conns = await azdata.connection.getConnections(true).then((connections) => { return connections; });
+		var conns = await azdata.connection.getConnections(false).then((connections) => { return connections; });
+		var activeConnections = await azdata.connection.getActiveConnections().then((connections) => { return connections; });
+		var activeConnectionIds = activeConnections.map((c) => { return c.connectionId; });
 
 		for (let i = 0; i < conns.length; i++) {
 			let thisConn = conns[i];
-			let connectionItem: SchemaItem = new SchemaItem(thisConn.databaseName, "", "folder", this.ITEM_COLLAPSED);
+			let connectionItem: SchemaItem = new SchemaItem(thisConn.serverName, "", "connection", this.ITEM_COLLAPSED);
+			console.log("thisConn", thisConn);
+			// get the items if this connection is active...
+			if (activeConnectionIds.includes(thisConn.connectionId)) {
+				let dbFolders = await this.getDatabasesFromConnection(thisConn);
+				connectionItem.children.push(...dbFolders);
 
-			let tableFolder = new SchemaItem("Tables", "", "folder", this.ITEM_COLLAPSED);
-			let procFolder = new SchemaItem("Procs", "", "folder", this.ITEM_COLLAPSED);
+				let schemaFolders = await this.getSchemasFromConnection(thisConn);
 
-			let schemaFolders = await this.getSchemasFromConnection(thisConn);
-			let tableItems = await this.getTablesFromConnection(thisConn);
-			let procItems = await this.getProcsFromConnection(thisConn);
 
-			tableFolder.children.push(...tableItems);
-			procFolder.children.push(...procItems);
+				let tableFolder = new SchemaItem("Tables", "", "folder", this.ITEM_COLLAPSED);
+				let procFolder = new SchemaItem("Procs", "", "folder", this.ITEM_COLLAPSED);
 
-			tableFolder = this.separateIntoSchemas(tableFolder, schemaFolders);
-			procFolder = this.separateIntoSchemas(procFolder, schemaFolders);
+				let tableItems = await this.getTablesFromConnection(thisConn);
+				let procItems = await this.getProcsFromConnection(thisConn);
 
-			connectionItem.children.push(tableFolder);
-			connectionItem.children.push(procFolder);
+				tableFolder.children.push(...tableItems);
+				procFolder.children.push(...procItems);
 
-			testItem.children.push(connectionItem);
+				tableFolder = this.separateIntoSchemas(tableFolder, schemaFolders);
+				procFolder = this.separateIntoSchemas(procFolder, schemaFolders);
+
+				connectionItem.children.push(tableFolder);
+				connectionItem.children.push(procFolder);
+			}
+
+			items.push(connectionItem);
 		};
 
 		return new Promise<SchemaItem[]>((resolve, reject) => {
@@ -84,6 +94,22 @@ export default class SchemaTreeProvider implements vscode.TreeDataProvider<Schem
 		});
 
 		return myItems;
+	}
+
+	private async getDatabasesFromConnection(conn: azdata.connection.ConnectionProfile): Promise<SchemaItem[]> {
+		let dbFolders: SchemaItem[] = new Array();
+		let dbListSql = "select [name] from sys.databases WHERE name NOT IN('master', 'tempdb', 'model', 'msdb') order by name";
+
+		let qResult = await DAL.runQueryWithConnection(dbListSql, conn);
+
+		qResult.rows.map((r) => {
+			let item = new SchemaItem(r[0].displayValue, "", "folder", this.ITEM_COLLAPSED);
+			dbFolders.push(item);
+		});
+
+		return new Promise<SchemaItem[]>((resolve, reject) => {
+			resolve(dbFolders);
+		});
 	}
 
 	private async getSchemasFromConnection(conn: azdata.connection.ConnectionProfile): Promise<SchemaItem[]> {
