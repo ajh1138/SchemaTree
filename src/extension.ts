@@ -35,22 +35,32 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    context.subscriptions.push(vscode.commands.registerCommand('schematree.helloWorld', () => {
-        loadStructureForConnection();
+    context.subscriptions.push(vscode.commands.registerCommand('schematree.scriptAsCreate', (myItem: SchemaItem) => {
+        scriptAsCreate(myItem);
     }));
 
-    context.subscriptions.push(vscode.commands.registerCommand('schematree.showTreeEvent', (thingy) => {
-        // The code you place here will be executed every time your command is executed
-        console.log("thingy:", thingy);
+    context.subscriptions.push(vscode.commands.registerCommand('schematree.scriptAsDrop', (myItem: SchemaItem) => {
+        scriptAsDrop(myItem);
     }));
 
-    context.subscriptions.push(vscode.commands.registerCommand('schematree.showCurrentConnection', () => {
-
+    context.subscriptions.push(vscode.commands.registerCommand('schematree.scriptAsAlter', (myItem: SchemaItem) => {
+        scriptAsAlter(myItem);
     }));
 
-    context.subscriptions.push(vscode.commands.registerCommand('schematree.showDefinition', (myItem: SchemaItem) => {
-        console.log("myItem", myItem);
-        getObjectDefinition(myItem);
+    context.subscriptions.push(vscode.commands.registerCommand('schematree.scriptAsExecute', (myItem: SchemaItem) => {
+        scriptAsExecute(myItem);
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand('schematree.refresh', (myItem: SchemaItem) => {
+        refreshItem(myItem);
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand('schematree.selectTop1000', (myItem: SchemaItem) => {
+        selectTop1000(myItem);
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand('schematree.editData', (myItem: SchemaItem) => {
+        editTableData(myItem);
     }));
 }
 
@@ -66,7 +76,7 @@ function loadStructureForConnection() {
     });
 }
 
-async function getObjectDefinition(item: SchemaItem) {
+async function scriptAsCreate(item: SchemaItem) {
     let fullObjectName = item.schemaName + '.' + item.objectName;
     vscode.window.showInformationMessage(`Loading definition for ${fullObjectName}...`);
 
@@ -86,4 +96,28 @@ async function getObjectDefinition(item: SchemaItem) {
 
     let doc = await azdata.queryeditor.openQueryDocument({ content: itemDefinition });
     await azdata.queryeditor.connect(doc.uri, item.connectionProfile!.connectionId);
+}
+
+async function scriptAsDrop(item: SchemaItem) {
+
+}
+
+async function scriptAsAlter(item: SchemaItem) {
+
+}
+
+async function scriptAsExecute(item: SchemaItem) {
+
+}
+
+async function selectTop1000(item: SchemaItem) {
+
+}
+
+async function editTableData(item: SchemaItem) {
+
+}
+
+async function refreshItem(item: SchemaItem) {
+
 }

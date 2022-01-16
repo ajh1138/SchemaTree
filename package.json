@@ -37,30 +37,62 @@
 		},
 		"commands": [
 			{
-				"command": "schematree.helloWorld",
-				"title": "Hello World"
+				"command": "schematree.scriptAsCreate",
+				"title": "Script as CREATE"
 			},
 			{
-				"command": "schematree.showCurrentConnection",
-				"title": "Show Current Connection"
+				"command": "schematree.scriptAsDrop",
+				"title": "Script as DROP"
 			},
 			{
-				"command": "schematree.showDefinition",
-				"title": "Show Definition"
+				"command": "schematree.scriptAsAlter",
+				"title": "Script as ALTER"
 			},
 			{
-				"command": "schematree.showTreeEvent",
-				"title": "show tree event"
+				"command": "schematree.scriptAsExecute",
+				"title": "Script as EXECUTE"
+			},
+			{
+				"command": "schematree.refresh",
+				"title": "Refresh"
+			},
+			{
+				"command": "schematree.selectTop1000",
+				"title": "Select Top 1000"
+			},
+			{
+				"command": "schematree.editData",
+				"title": "Edit Data"
 			}
 		],
 		"menus": {
 			"view/item/context": [
 				{
-					"command": "schematree.showDefinition",
+					"command": "schematree.scriptAsCreate",
 					"when": "viewItem == proc || viewItem == table"
 				},
 				{
-					"command": "schematree.showTreeEvent"
+					"command": "schematree.scriptAsAlter",
+					"when": "viewItem == proc"
+				},
+				{
+					"command": "schematree.scriptAsDrop",
+					"when": "viewItem == proc || viewItem == table"
+				},
+				{
+					"command": "schematree.scriptAsExecute",
+					"when": "viewItem == proc"
+				},
+				{
+					"command": "schematree.refresh"
+				},
+				{
+					"command": "schematree.selectTop1000",
+					"when": "viewItem == table || viewItem == view"
+				},
+				{
+					"command": "schematree.editData",
+					"when": "viewItem == table"
 				}
 			]
 		}
