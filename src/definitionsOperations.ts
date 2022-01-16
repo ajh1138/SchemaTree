@@ -49,7 +49,7 @@ export const getProcDefinition = async (item: SchemaItem) => {
 
 		console.log("qresult", qresult.rows[0][0].displayValue);
 
-		let definition = qresult.rows[0][0].displayValue;
+		definition = qresult.rows[0][0].displayValue;
 	} catch (err) {
 		vscode.window.showInformationMessage(`Error getting definition for ${fullObjectName}. ${err}`);
 	} finally {

@@ -83,7 +83,7 @@ export default class SchemaTreeProvider implements vscode.TreeDataProvider<Schem
 				children = item.children;
 				break;
 			case "procsFolder":
-				this.getProcsFromObjectExplorer(item);
+				//				this.getProcsFromObjectExplorer(item);
 				children = await this.getProcsForDatabase(item.databaseName, item.connectionProfile!);
 				break;
 			case "procsSchemaFolder":
@@ -208,16 +208,16 @@ export default class SchemaTreeProvider implements vscode.TreeDataProvider<Schem
 		}
 	}
 
-	private async getProcsFromObjectExplorer(item: SchemaItem): Promise<SchemaItem[]> {
-		let procs: SchemaItem[] = new Array();
-		let foundNodes = await azdata.objectexplorer.findNodes(item.connectionProfile!.connectionId, "StoredProcedure", item.schemaName, ".", item.databaseName, [""]);
+	// private async getProcsFromObjectExplorer(item: SchemaItem): Promise<SchemaItem[]> {
+	// 	let procs: SchemaItem[] = new Array();
+	// 	let foundNodes = await azdata.objectexplorer.findNodes(item.connectionProfile!.connectionId, "StoredProcedure", item.schemaName, ".", item.databaseName, [""]);
 
-		console.log("procs - foundNodes", foundNodes);
+	// 	console.log("procs - foundNodes", foundNodes);
 
-		return new Promise((resolve, reject) => {
-			resolve(procs);
-		});
-	}
+	// 	return new Promise((resolve, reject) => {
+	// 		resolve(procs);
+	// 	});
+	// }
 
 	private separateIntoSchemas(itemsIn: SchemaItem[], foldersItemType: string): SchemaItem[] {
 		let schemaFolders: SchemaItem[] = new Array();
