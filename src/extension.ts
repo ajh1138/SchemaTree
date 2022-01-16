@@ -1,18 +1,14 @@
 // tree icon by Mithun Raj on freeicons.io
 
 'use strict';
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
+
 import * as vscode from 'vscode';
-
-// The module 'azdata' contains the Azure Data Studio extensibility API
-// This is a complementary set of APIs that add SQL / Data-specific functionality to the app
-// Import the module and reference it with the alias azdata in your code below
-
 import * as azdata from 'azdata';
 
 import SchemaItem from './schemaItem';
 import SchemaTreeProvider from './SchemaTreeProvider';
+import { ObjectExplorerNodeToNodeInfo } from './objectExplorerMisc';
+import { getProcDefinition, getTableDefinition } from './definitionsOperations';
 
 
 let theItems: SchemaItem[] = new Array();
@@ -39,14 +35,8 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    // The command has been defined in the package.json file
-    // Now provide the implementation of the command with  registerCommand
-    // The commandId parameter must match the command field in package.json
     context.subscriptions.push(vscode.commands.registerCommand('schematree.helloWorld', () => {
-        // The code you place here will be executed every time your command is executed
-
         loadStructureForConnection();
-
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('schematree.showTreeEvent', (thingy) => {
@@ -59,6 +49,7 @@ export function activate(context: vscode.ExtensionContext) {
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('schematree.showDefinition', (myItem: SchemaItem) => {
+        console.log("myItem", myItem);
         getObjectDefinition(myItem);
     }));
 }
@@ -81,25 +72,17 @@ async function getObjectDefinition(item: SchemaItem) {
 
     let itemDefinition = "";
 
-    if (item.itemType === "proc") {
-        let objectDefinitionSql = "SELECT OBJECT_DEFINITION(OBJECT_ID('" + fullObjectName + "')) AS myDefinition;";
-
-        let connectionUri = await azdata.connection.getUriForConnection(item.connectionProfile!.connectionId);
-
-        console.log("conn uri", connectionUri);
-
-        let qprov = azdata.dataprotocol.getProvider<azdata.QueryProvider>(item.connectionProfile!.providerId, azdata.DataProviderType.QueryProvider);
-
-        let qresult = await qprov.runQueryAndReturn(connectionUri, objectDefinitionSql);
-
-        console.log("qresult", qresult.rows[0][0].displayValue);
-
-        itemDefinition = qresult.rows[0][0].displayValue;
-    } else {
-        let foo = await vscode.commands.executeCommand("objectExplorer.scriptAsCreate", item);
-        console.log("script as create: ", foo);
+    switch (item.itemType) {
+        case "proc":
+            itemDefinition = await getProcDefinition(item);
+            break;
+        case "table":
+            itemDefinition = await getTableDefinition(item);
+            break;
+        case "view":
+            itemDefinition = await getTableDefinition(item);
+            break;
     }
-
 
     let doc = await azdata.queryeditor.openQueryDocument({ content: itemDefinition });
     await azdata.queryeditor.connect(doc.uri, item.connectionProfile!.connectionId);

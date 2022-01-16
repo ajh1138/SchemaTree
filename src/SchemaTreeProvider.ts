@@ -5,6 +5,7 @@ import SchemaItem from './SchemaItem';
 import * as DAL from './SchemaTreeDataAccessLayer';
 import { table } from 'console';
 import { resolve } from 'path';
+import { Schema } from 'inspector';
 
 export default class SchemaTreeProvider implements vscode.TreeDataProvider<SchemaItem>{
 
@@ -46,19 +47,23 @@ export default class SchemaTreeProvider implements vscode.TreeDataProvider<Schem
 	private async getConnections(): Promise<SchemaItem[]> {
 		let items: SchemaItem[] = new Array();
 
-		var conns = await azdata.connection.getConnections(false).then((connections) => { return connections; });
-		var activeConnections = await azdata.connection.getActiveConnections().then((connections) => { return connections; });
-		var activeConnectionIds = activeConnections.map((c) => { return c.connectionId; });
+		try {
+			var conns = await azdata.connection.getConnections(false).then((connections) => { return connections; });
+			var activeConnections = await azdata.connection.getActiveConnections().then((connections) => { return connections; });
+			var activeConnectionIds = activeConnections.map((c) => { return c.connectionId; });
 
-		for (let i = 0; i < conns.length; i++) {
-			let thisConn = conns[i];
-			let connectionItem: SchemaItem = new SchemaItem(thisConn.serverName, "", "", "connection", this.ITEM_COLLAPSED, thisConn);
-			items.push(connectionItem);
-		};
-
-		return new Promise<SchemaItem[]>((resolve, reject) => {
-			resolve(items);
-		});
+			for (let i = 0; i < conns.length; i++) {
+				let thisConn = conns[i];
+				let connectionItem: SchemaItem = new SchemaItem(thisConn.serverName, "", "", "connection", this.ITEM_COLLAPSED, thisConn);
+				items.push(connectionItem);
+			};
+		} catch (err) {
+			vscode.window.showErrorMessage(`Error in getConnections(). ${err}`);
+		} finally {
+			return new Promise<SchemaItem[]>((resolve, reject) => {
+				resolve(items);
+			});
+		}
 	};
 
 	private async getChildrenOfItem(item: SchemaItem): Promise<SchemaItem[]> {
@@ -72,14 +77,21 @@ export default class SchemaTreeProvider implements vscode.TreeDataProvider<Schem
 				children = await this.makeFoldersForDatabase(item.databaseName, item.connectionProfile);
 				break;
 			case "tablesFolder":
-				children = await this.getTablesForDatabase(item.databaseName, item.connectionProfile);
+				children = await this.getTablesForDatabase(item.databaseName, item.connectionProfile!);
 				break;
-			// case "":
-
-			// 	break;
-			// case "":
-
-			// 	break;
+			case "tablesSchemaFolder":
+				children = item.children;
+				break;
+			case "procsFolder":
+				this.getProcsFromObjectExplorer(item);
+				children = await this.getProcsForDatabase(item.databaseName, item.connectionProfile!);
+				break;
+			case "procsSchemaFolder":
+				children = item.children;
+				break;
+			case "viewsFolder":
+				children = await this.getViewsForDatabase(item.databaseName, item.connectionProfile!);
+				break;
 			// case "":
 
 			// 	break;
@@ -110,11 +122,11 @@ export default class SchemaTreeProvider implements vscode.TreeDataProvider<Schem
 
 		let tblFolder = new SchemaItem("Tables", "", databaseName, "tablesFolder", this.ITEM_COLLAPSED, connectionProfile);
 		let viewsFolder = new SchemaItem("Views", "", databaseName, "viewsFolder", this.ITEM_COLLAPSED, connectionProfile);
-		let procFolder = new SchemaItem("Procs", "", databaseName, "procsFolder", this.ITEM_COLLAPSED, connectionProfile);
+		let procsFolder = new SchemaItem("Procs", "", databaseName, "procsFolder", this.ITEM_COLLAPSED, connectionProfile);
 
 		folders.push(tblFolder);
 		folders.push(viewsFolder);
-		folders.push(procFolder);
+		folders.push(procsFolder);
 
 		return new Promise<SchemaItem[]>((resolve, reject) => {
 			resolve(folders);
@@ -125,22 +137,53 @@ export default class SchemaTreeProvider implements vscode.TreeDataProvider<Schem
 		let dbFolders: SchemaItem[] = new Array();
 		let dbListSql = "select [name] from sys.databases WHERE name NOT IN('master', 'tempdb', 'model', 'msdb') order by name;";
 
-		let qResult = await DAL.runQueryWithConnection(dbListSql, conn);
+		try {
+			let qResult = await DAL.runQueryWithConnection(dbListSql, conn);
 
-		qResult.rows.map((r) => {
-			let dbName = r[0].displayValue;
-			let item = new SchemaItem(dbName, "", dbName, "database", this.ITEM_COLLAPSED, conn);
-			dbFolders.push(item);
-		});
-		console.log("dbFolders", dbFolders);
+			qResult.rows.map((r) => {
+				let dbName = r[0].displayValue;
+				let item = new SchemaItem(dbName, "", dbName, "database", this.ITEM_COLLAPSED, conn);
+				dbFolders.push(item);
+			});
+		} catch (err) {
+			vscode.window.showErrorMessage(`Error running query in getDatabasesFromConnection(). ${err}`);
+		} finally {
+			return new Promise<SchemaItem[]>((resolve, reject) => {
+				resolve(dbFolders);
+			});
+		}
+	}
+
+	private async getTablesForDatabase(databaseName: string, connectionProfile: azdata.connection.ConnectionProfile): Promise<SchemaItem[]> {
+		let result: SchemaItem[] = new Array();
+
+		try {
+			let tableListSql = `SELECT SCHEMA_NAME(schema_id) AS [Schema], name FROM sys.objects WHERE type = 'U' ORDER BY [Schema], name;`;
+			let tablesList = await this.getItemsFromConnection(tableListSql, databaseName, "table", connectionProfile!);
+			result = this.separateIntoSchemas(tablesList, "tablesSchemaFolder");
+		} catch (error) {
+			console.error('Exception ' + error);
+			vscode.window.showErrorMessage(`Error in . ${error}`);
+		} finally {
+			return new Promise<SchemaItem[]>((resolve, reject) => {
+				resolve(result);
+			});
+		}
+	}
+
+	private async getProcsForDatabase(databaseName: string, connectionProfile: azdata.connection.ConnectionProfile): Promise<SchemaItem[]> {
+		let tableListSql = `SELECT ROUTINE_SCHEMA, ROUTINE_NAME, ROUTINE_DEFINITION FROM ${databaseName}.INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_TYPE = 'PROCEDURE';`;
+		let procs = await this.getItemsFromConnection(tableListSql, databaseName, "proc", connectionProfile!);
+		let result = this.separateIntoSchemas(procs, "procsSchemaFolder");
+
 		return new Promise<SchemaItem[]>((resolve, reject) => {
-			resolve(dbFolders);
+			resolve(result);
 		});
 	}
 
-	private async getTablesForDatabase(databaseName: string, connectionProfile: azdata.connection.ConnectionProfile | undefined): Promise<SchemaItem[]> {
-		let tableListSql = `SELECT SCHEMA_NAME(schema_id) AS [Schema], name FROM sys.objects WHERE type = 'U' ORDER BY [Schema], name;`;
-		let result = await this.getItemsFromConnection(tableListSql, databaseName, "table", connectionProfile!);
+	private async getViewsForDatabase(databaseName: string, connectionProfile: azdata.connection.ConnectionProfile): Promise<SchemaItem[]> {
+		let tableListSql = `SELECT SCHEMA_NAME(schema_id) AS [Schema], name FROM sys.objects WHERE type = 'V' ORDER BY [Schema], name;`;
+		let result = await this.getItemsFromConnection(tableListSql, databaseName, "view", connectionProfile!);
 
 		return new Promise<SchemaItem[]>((resolve, reject) => {
 			resolve(result);
@@ -154,67 +197,43 @@ export default class SchemaTreeProvider implements vscode.TreeDataProvider<Schem
 
 		try {
 			qResult.rows.map((r) => {
-				let item = new SchemaItem(r[1].displayValue, r[0].displayValue, dbName, itemType, this.ITEM_NONE, conn);
+				let item = new SchemaItem(r[1].displayValue, r[0].displayValue, dbName, itemType, this.ITEM_COLLAPSED, conn);
 				myItems.push(item);
 			});
 		} catch (err) {
-			console.log("err:", err);
+			console.log("error running query:", itemListSql);
+			vscode.window.showErrorMessage(`Error running query in getItemsFromConnection(). ${err}`);
+		} finally {
+			return myItems;
 		}
-
-		return myItems;
 	}
 
+	private async getProcsFromObjectExplorer(item: SchemaItem): Promise<SchemaItem[]> {
+		let procs: SchemaItem[] = new Array();
+		let foundNodes = await azdata.objectexplorer.findNodes(item.connectionProfile!.connectionId, "StoredProcedure", item.schemaName, ".", item.databaseName, [""]);
 
+		console.log("procs - foundNodes", foundNodes);
 
-	// private async getSchemasFromDatabase(dbName: string, conn: azdata.connection.ConnectionProfile): Promise<SchemaItem[]> {
-	// 	let result: SchemaItem[] = new Array();
-	// 	let schemaListSql = `USING ${dbName}; SELECT Name FROM sys.schemas ORDER BY Name;`;
+		return new Promise((resolve, reject) => {
+			resolve(procs);
+		});
+	}
 
-	// 	let qResult = await DAL.runQueryWithConnection(schemaListSql, conn);
+	private separateIntoSchemas(itemsIn: SchemaItem[], foldersItemType: string): SchemaItem[] {
+		let schemaFolders: SchemaItem[] = new Array();
+		let allSchemas = itemsIn.map((x) => { return x.schemaName; });
+		let schemas = [...new Set(allSchemas)];
+		let sampleItem = itemsIn[0];
 
-	// 	qResult.rows.map((r) => {
-	// 		let item = new SchemaItem(r[0].displayValue, "", "folder", this.ITEM_COLLAPSED);
-	// 		result.push(item);
-	// 	});
-	// 	console.log("schemas:", result);
-	// 	return new Promise<SchemaItem[]>((resolve, reject) => {
-	// 		resolve(result);
-	// 	});
-	// }
+		schemas.forEach((schemaName) => {
+			let thisSchemaFolder = new SchemaItem(schemaName, schemaName, sampleItem.databaseName, foldersItemType, this.ITEM_COLLAPSED, sampleItem.connectionProfile);
+			let theseItems = itemsIn.filter((f) => { return f.schemaName === schemaName; });
 
-	// private async getProcsFromSchema(schemaName: string, conn: azdata.connection.ConnectionProfile): Promise<SchemaItem[]> {
-	// 	let procListSql = `SELECT SCHEMA_NAME(schema_id) AS [Schema], name FROM sys.objects WHERE type = 'P' AND SCHEMA_NAME(schema_id) = '${schemaName}' ORDER BY name;`;
-	// 	let result = await this.getItemsFromConnection(procListSql, "proc", conn);
-	// 	console.log("procs:", result);
-	// 	return new Promise<SchemaItem[]>((resolve, reject) => {
-	// 		resolve(result);
-	// 	});
-	// }
-
-	// private async getTablesFromDatabase(conn: azdata.connection.ConnectionProfile): Promise<SchemaItem[]> {
-	// 	let tableListSql = `SELECT SCHEMA_NAME(schema_id) AS [Schema], name FROM sys.objects WHERE type = 'U' WHERE SCHEMA_NAME(schema_id) = '${schemaName}' ORDER BY name;`;
-	// 	let result = await this.getItemsFromConnection(tableListSql, "table", conn);
-
-	// 	return new Promise<SchemaItem[]>((resolve, reject) => {
-	// 		resolve(result);
-	// 	});
-	// }
-
-	private separateIntoSchemas(folderIn: SchemaItem, schemaFolders: SchemaItem[]): SchemaItem {
-		let resultFolder = new SchemaItem(folderIn.objectName, folderIn.schemaName, folderIn.databaseName, folderIn.itemType, folderIn.collapsibleState);
-		let currentSchemaName = "";
-
-		schemaFolders.forEach((schemaFolder) => {
-			currentSchemaName = schemaFolder.objectName;
-			let thisSchemasItems = folderIn.children.filter((y) => { return y.schemaName === currentSchemaName; });
-
-			if (thisSchemasItems.length > 0) {
-				schemaFolder.children.push(...thisSchemasItems);
-				resultFolder.children.push(schemaFolder);
-			}
+			thisSchemaFolder.children = theseItems;
+			schemaFolders.push(thisSchemaFolder);
 		});
 
-		return resultFolder;
+		return schemaFolders;
 	}
 }
 
