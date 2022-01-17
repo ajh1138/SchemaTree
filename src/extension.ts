@@ -7,33 +7,27 @@ import * as azdata from 'azdata';
 
 import SchemaItem from './schemaItem';
 import SchemaTreeProvider from './SchemaTreeProvider';
-import { ObjectExplorerNodeToNodeInfo } from './objectExplorerMisc';
 import { getProcDefinition, getTableDefinition } from './definitionsOperations';
 
-
-let theItems: SchemaItem[] = new Array();
-
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+    console.log('"schematree" is now active!');
 
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
-    console.log('Congratulations, your extension "schematree" is now active!');
+    // azdata.connection.registerConnectionEventListener({
+    //     onConnectionEvent(eventType: azdata.connection.ConnectionEventType, ownerUri: string, profile: azdata.IConnectionProfile) {
+    //         try {
+    //             if (eventType === "onConnect") {
+    //                 console.log("connection owner:", ownerUri);
+    //                 loadStructureForConnection();
+    //             }
+    //         } catch (ex) {
+    //             console.log("error on this shizzle", ex);
+    //         }
+    //     }
+    // });
 
-    // connEvtListener.onConnectionEvent(() => )
-    azdata.connection.registerConnectionEventListener({
-        onConnectionEvent(eventType: azdata.connection.ConnectionEventType, ownerUri: string, profile: azdata.IConnectionProfile) {
-            try {
-                if (eventType === "onConnect") {
-                    console.log("connection owner:", ownerUri);
-                    loadStructureForConnection();
-                }
-            } catch (ex) {
-                console.log("error on this shizzle", ex);
-            }
-        }
-    });
+    initTreeStructure();
+
+    //vscode.commands.registerCommand("schematree.openConnectionNode", (item: SchemaItem) => { connectionNodeHandler(item); });
 
     context.subscriptions.push(vscode.commands.registerCommand('schematree.scriptAsCreate', (myItem: SchemaItem) => {
         scriptAsCreate(myItem);
@@ -64,21 +58,60 @@ export function activate(context: vscode.ExtensionContext) {
     }));
 }
 
-// this method is called when your extension is deactivated
 export function deactivate() {
 }
 
-function loadStructureForConnection() {
-    vscode.window.showInformationMessage('Loading SchemaTree for current connections...');
+function initTreeStructure() {
+    vscode.window.showInformationMessage('SchemaTree is loading connections...');
 
     vscode.window.createTreeView('schematree-view', {
         treeDataProvider: new SchemaTreeProvider()
     });
 }
 
+async function connectionNodeHandler(item: SchemaItem) {
+    vscode.window.showInformationMessage('connection node event received.');
+    let connectionIsActive = await isThisConnectionActive(item.connectionProfile!);
+
+    if (!connectionIsActive) {
+        vscode.window.showInformationMessage(`Connecting to ${item.objectName}`);
+
+        try {
+            // --------- This is where I'm trying to open connections via SchemaTree instead of using the ObjectExplorer ----------- //
+
+            // let foundNodes = await azdata.objectexplorer.findNodes(item.connectionProfile!.connectionId, "Server", "", item.objectName, "", [""]);
+            // let myOeNode = foundNodes[0];
+            // console.log("nodes", myOeNode);
+
+            // let connectionArgs = {
+            //     serverName: item.objectName,
+            //     providerName: "MSSQL",
+            //     authenticationType: "SqlLogin",
+            //     userName: item.connectionProfile!.userName,
+            //     password: item.connectionProfile!.password
+            // };
+
+            // let nodeInfo = ObjectExplorerNodeToNodeInfo(myOeNode);
+            // let oeActionsContext: azdata.ObjectExplorerContext = {
+            //     isConnectionNode: false,
+            //     connectionProfile: { providerName: "MSSQL", id: item.connectionProfile!.connectionId, ...item.connectionProfile! },
+            //     nodeInfo: nodeInfo
+            // };
+            /////     console.log("server item", item);
+            ////    let connResult = await vscode.commands.executeCommand("azdata.connect", connectionArgs);
+            // let superSpecialConnectionProfile = { providerName: "MSSQL", id: item.connectionProfile!.connectionId, ...item.connectionProfile! };
+            //let connResult: azdata.ConnectionResult = await azdata.connection.connect(superSpecialConnectionProfile, false, false);
+            //// console.log("connResult", connResult);
+        } catch (error) {
+            console.log("error connecting: ", error);
+        }
+
+    }
+}
+
 async function scriptAsCreate(item: SchemaItem) {
     let fullObjectName = item.schemaName + '.' + item.objectName;
-    vscode.window.showInformationMessage(`Loading definition for ${fullObjectName}...`);
+    vscode.window.showInformationMessage(`Script as CREATE for ${fullObjectName}...`);
 
     let itemDefinition = "";
 
@@ -121,3 +154,15 @@ async function editTableData(item: SchemaItem) {
 async function refreshItem(item: SchemaItem) {
 
 }
+
+async function isThisConnectionActive(connProfile: azdata.connection.ConnectionProfile): Promise<boolean> {
+    let activeConnections = await azdata.connection.getActiveConnections().then((connections) => { return connections; });
+    let activeConnectionIds = activeConnections.map((c) => { return c.connectionId; });
+
+    let connectionIsActive = activeConnectionIds.includes(connProfile.connectionId);
+    console.log("connection is active? ", connectionIsActive);
+    return new Promise<boolean>((resolve, reject) => {
+        resolve(connectionIsActive);
+    });
+}
+

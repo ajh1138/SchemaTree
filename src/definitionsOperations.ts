@@ -17,7 +17,7 @@ export const getTableDefinition = async (item: SchemaItem) => {
 		let nodeInfo = ObjectExplorerNodeToNodeInfo(myOeNode);
 		let oeActionsContext: azdata.ObjectExplorerContext = {
 			isConnectionNode: false,
-			connectionProfile: { providerName: "", id: item.connectionProfile!.connectionId, ...item.connectionProfile! },
+			connectionProfile: { providerName: "MSSQL", id: item.connectionProfile!.connectionId, ...item.connectionProfile! },
 			nodeInfo: nodeInfo
 		};
 

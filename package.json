@@ -12,8 +12,6 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:schematree.helloWorld",
-		"onCommand:schematree.showCurrentConnection",
 		"onStartupFinished"
 	],
 	"main": "./out/extension.js",
@@ -36,6 +34,10 @@
 			]
 		},
 		"commands": [
+			{
+				"command": "schematree.openConnectionNode",
+				"title": "open the connection node"
+			},
 			{
 				"command": "schematree.scriptAsCreate",
 				"title": "Script as CREATE"

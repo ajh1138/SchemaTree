@@ -55,6 +55,11 @@ export default class SchemaTreeProvider implements vscode.TreeDataProvider<Schem
 			for (let i = 0; i < conns.length; i++) {
 				let thisConn = conns[i];
 				let connectionItem: SchemaItem = new SchemaItem(thisConn.serverName, "", "", "connection", this.ITEM_COLLAPSED, thisConn);
+				connectionItem.command = {
+					command: "schematree.openConnectionNode",
+					title: "Open Connection",
+					arguments: [connectionItem]
+				};
 				items.push(connectionItem);
 			};
 		} catch (err) {
@@ -71,7 +76,9 @@ export default class SchemaTreeProvider implements vscode.TreeDataProvider<Schem
 
 		switch (item.itemType) {
 			case "connection":
-				children = await this.getDatabasesFromConnection(item.connectionProfile!);
+				if (false) {
+					children = await this.getDatabasesFromConnection(item.connectionProfile!);
+				}
 				break;
 			case "database":
 				children = await this.makeFoldersForDatabase(item.databaseName, item.connectionProfile);
