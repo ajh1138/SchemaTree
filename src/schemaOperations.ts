@@ -30,6 +30,9 @@ export async function getChildrenOfItem(item: SchemaItem): Promise<SchemaItem[]>
 		case "tablesSchemaFolder":
 			children = item.children;
 			break;
+		case "table":
+			children = await makeFoldersForTable(item);
+			break;
 		case "procsFolder":
 			//				getProcsFromObjectExplorer(item);
 			children = await getProcsForDatabase(item.databaseName, item.connectionProfile!);
@@ -78,12 +81,6 @@ export async function getConnections(): Promise<SchemaItem[]> {
 			let thisConn = conns[i];
 			if (activeConnectionIds.includes(thisConn.connectionId)) {
 				let connectionItem: SchemaItem = new SchemaItem(thisConn.serverName, "", "", "connection", ITEM_COLLAPSED, thisConn);
-				// connectionItem.command = {
-				// 	command: "schematree.openConnectionNode",
-				// 	title: "Open Connection",
-				// 	arguments: [connectionItem]
-				// };
-
 				items.push(connectionItem);
 			}
 		};
@@ -187,17 +184,6 @@ export async function getItemsFromConnection(itemListSql: string, dbName: string
 	}
 }
 
-// private async getProcsFromObjectExplorer(item: SchemaItem): Promise<SchemaItem[]> {
-// 	let procs: SchemaItem[] = new Array();
-// 	let foundNodes = await azdata.objectexplorer.findNodes(item.connectionProfile!.connectionId, "StoredProcedure", item.schemaName, ".", item.databaseName, [""]);
-
-// 	console.log("procs - foundNodes", foundNodes);
-
-// 	return new Promise((resolve, reject) => {
-// 		resolve(procs);
-// 	});
-// }
-
 export function separateIntoSchemas(itemsIn: SchemaItem[], foldersItemType: string): SchemaItem[] {
 	let schemaFolders: SchemaItem[] = new Array();
 	let allSchemas = itemsIn.map((x) => { return x.schemaName; });
@@ -213,4 +199,17 @@ export function separateIntoSchemas(itemsIn: SchemaItem[], foldersItemType: stri
 	});
 
 	return schemaFolders;
+}
+
+function makeFoldersForTable(parent: SchemaItem): Promise<SchemaItem[]> {
+	let result: SchemaItem[] = new Array();
+	let columnsFolder = new SchemaItem(parent.objectName, parent.schemaName, parent.databaseName, "columnsFolder", ITEM_COLLAPSED, parent.connectionProfile);
+	let keysFolder = new SchemaItem(parent.objectName, parent.schemaName, parent.databaseName, "keysFolder", ITEM_COLLAPSED, parent.connectionProfile);
+
+	result.push(columnsFolder);
+	result.push(keysFolder);
+
+	return new Promise<SchemaItem[]>((resolve, reject) => {
+		resolve(result);
+	});
 }
