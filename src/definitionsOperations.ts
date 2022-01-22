@@ -21,14 +21,14 @@ export const getTableDefinition = async (item: SchemaItem) => {
 			nodeInfo: nodeInfo
 		};
 
-		definition = await vscode.commands.executeCommand("objectExplorer.scriptAsCreate", oeActionsContext);
-		console.log("script as create: ", definition);
+		await vscode.commands.executeCommand("objectExplorer.scriptAsCreate", oeActionsContext);
+		//console.log("script as create: ", definition);
 	} catch (err) {
 		vscode.window.showErrorMessage(`Error getting definition for ${fullObjectName}. ${err}`);
 	} finally {
-		return new Promise<string>((resolve, reject) => {
-			resolve(definition);
-		});
+		// return new Promise<string>((resolve, reject) => {
+		// 	resolve(definition);
+		// });
 	}
 };
 

@@ -35,10 +35,6 @@
 		},
 		"commands": [
 			{
-				"command": "schematree.openConnectionNode",
-				"title": "open the connection node"
-			},
-			{
 				"command": "schematree.scriptAsCreate",
 				"title": "Script as CREATE"
 			},
