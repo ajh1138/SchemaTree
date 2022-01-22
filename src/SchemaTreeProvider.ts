@@ -9,6 +9,8 @@ export default class SchemaTreeProvider implements vscode.TreeDataProvider<Schem
 
 	}
 
+	isInitialized: boolean = false;
+
 	getTreeItem(element: SchemaItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
 		return element;
 	}
@@ -19,7 +21,11 @@ export default class SchemaTreeProvider implements vscode.TreeDataProvider<Schem
 			let children = schemaOps.getChildrenOfItem(element).then((c) => { return c; });
 			return children;
 		} else {
-			vscode.window.showInformationMessage("SchemaTree is refreshing its connection list.");
+			if (this.isInitialized) {
+				vscode.window.showInformationMessage("SchemaTree is refreshing its connection list.");
+			} else {
+				this.isInitialized = true;
+			}
 
 			return schemaOps.getConnections();
 		}

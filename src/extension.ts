@@ -15,8 +15,9 @@ import SchemaTreeProvider from './SchemaTreeProvider';
 export function activate(context: vscode.ExtensionContext) {
     console.log('"schematree" is now active!');
 
-    let myTreeView: vscode.TreeView<SchemaItem>;
     let myProvider = new SchemaTreeProvider();
+
+    let connectionList: string[] = new Array();
 
     initTreeStructure();
 
@@ -25,15 +26,30 @@ export function activate(context: vscode.ExtensionContext) {
             try {
                 switch (eventType) {
                     case "onConnect":
-                        connectionEventHandlers.handleOnConnectEvent(profile);
-                        myProvider.refresh();
+                        if (connectionList.includes(profile.id)) {
+                            console.log("already listed.");
+                        } else {
+                            connectionList.push(profile.id);
+                            //  connectionEventHandlers.handleOnConnectEvent(profile);
+                            myProvider.refresh();
+                        }
                         break;
                     case "onConnectionChanged":
                         connectionEventHandlers.handleOnConnectionChangedEvent(profile);
                         break;
                     case "onDisconnect":
-                        connectionEventHandlers.handleOnDisconnectEvent(profile);
-                        myProvider.refresh();
+                        //connectionEventHandlers.handleOnDisconnectEvent(profile);
+                        (async () => {
+                            azdata.connection.getActiveConnections().then((conns) => {
+                                let activeConnectionIds = conns.map((x) => { return x.connectionId; });
+
+                                if (!activeConnectionIds.includes(profile.id)) {
+                                    let connIndex = connectionList.indexOf(profile.id);
+                                    connectionList.splice(connIndex, 1);
+                                    myProvider.refresh();
+                                }
+                            });
+                        })();
                         break;
                 }
             } catch (ex) {
@@ -72,7 +88,7 @@ export function activate(context: vscode.ExtensionContext) {
     }));
 
     function initTreeStructure() {
-        myTreeView = vscode.window.createTreeView('schematree-view', {
+        vscode.window.createTreeView('schematree-view', {
             treeDataProvider: myProvider
         });
 
