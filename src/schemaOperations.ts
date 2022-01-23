@@ -6,6 +6,9 @@ import * as azdata from 'azdata';
 import * as DAL from './SchemaTreeDataAccessLayer';
 import SchemaItem from './schemaItem';
 import { getProcDefinition, getTableDefinition } from './definitionsOperations';
+import ColumnItem from './ColumnItem';
+import { cpuUsage } from 'process';
+import { parse } from 'path';
 
 const nodesToSkip = ["Service Broker", "Storage", "Security"];
 
@@ -43,9 +46,9 @@ export async function getChildrenOfItem(item: SchemaItem): Promise<SchemaItem[]>
 		case "viewsFolder":
 			children = await getViewsForDatabase(item.databaseName, item.connectionProfile!);
 			break;
-		// case "":
-
-		// 	break;
+		case "columnsFolder":
+			children = await getColumnsForTable(item);
+			break;
 		// case "":
 
 		// 	break;
@@ -211,5 +214,56 @@ function makeFoldersForTable(parent: SchemaItem): Promise<SchemaItem[]> {
 
 	return new Promise<SchemaItem[]>((resolve, reject) => {
 		resolve(result);
+	});
+}
+
+async function getColumnsForTable(table: SchemaItem): Promise<SchemaItem[]> {
+	let results: SchemaItem[] = new Array();
+
+	let colSql = `SELECT 
+					COLUMN_NAME, 
+					ORDINAL_POSITION, 
+					COLUMN_DEFAULT, 
+					IS_NULLABLE, 
+					DATA_TYPE, 
+					CHARACTER_MAXIMUM_LENGTH,
+					CHARACTER_OCTET_LENGTH,
+					NUMERIC_PRECISION,
+					NUMERIC_PRECISION_RADIX,
+					NUMERIC_SCALE,
+					DATETIME_PRECISION,
+					CHARACTER_SET_NAME
+				FROM 
+					INFORMATION_SCHEMA.COLUMNS
+				WHERE
+					TABLE_SCHEMA = '${table.schemaName}'
+				AND 
+					TABLE_NAME = '${table.objectName}'
+				ORDER BY 
+					ORDINAL_POSITION;`;
+
+	let queryResults = await DAL.runQueryWithConnection(colSql, table.connectionProfile!);
+
+	if (queryResults.rowCount > 0) {
+		queryResults.rows.forEach((x) => {
+			let col = new ColumnItem(x[0].displayValue, table.schemaName, table.databaseName, "column", ITEM_NONE, table.connectionProfile);
+			col.tableName = table.objectName;
+			col.ordinalPosition = parseInt(x[1].displayValue);
+			col.columnDefault = x[2].displayValue;
+			col.isNullable = (x[3].displayValue === "YES") ? true : false;
+			col.dataType = x[4].displayValue;
+			col.characterMaximumLength = parseInt(x[5].displayValue);
+			col.characterOctetLength = parseInt(x[6].displayValue);
+			col.numericPrecision = parseInt(x[7].displayValue);
+			col.numericPrecisionRadix = parseInt(x[8].displayValue);
+			col.numericScale = parseInt(x[9].displayValue);
+			col.datetimePrecision = parseInt(x[10].displayValue);
+			col.characterSetName = x[11].displayValue;
+			results.push(col);
+		});
+	}
+
+	return new Promise<SchemaItem[]>((resolve, reject) => {
+		resolve(results);
 	});
 }
