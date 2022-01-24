@@ -3,11 +3,11 @@ import * as azdata from 'azdata';
 import SchemaItem from './SchemaItem';
 import path = require('path');
 import { makeIconPath } from './IconUtils';
-import { connect } from 'http2';
+
+type ColumnItemModified = Omit<SchemaItem, "label">;
 
 export default class ColumnItem extends SchemaItem {
 	//	public children: SchemaItem[] = new Array();
-	public iconName: string = "column.svg";
 	public tableName: string = "";
 	public columnName: string = "";
 	public ordinalPosition: number | null = null;
@@ -49,11 +49,4 @@ export default class ColumnItem extends SchemaItem {
 		this.connectionProfile = connectionProfile;
 		this.databaseName = databaseName;
 	};
-
-	// make this a getter somehow
-	// public get label() {
-
-	// 	return "";
-	// };
-
 }

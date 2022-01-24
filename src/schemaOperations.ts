@@ -9,6 +9,7 @@ import { getProcDefinition, getTableDefinition } from './definitionsOperations';
 import ColumnItem from './ColumnItem';
 import { cpuUsage } from 'process';
 import { parse } from 'path';
+import { makeIconPath } from './IconUtils';
 
 const nodesToSkip = ["Service Broker", "Storage", "Security"];
 
@@ -34,7 +35,9 @@ export async function getChildrenOfItem(item: SchemaItem): Promise<SchemaItem[]>
 			children = item.children;
 			break;
 		case "table":
-			children = await makeFoldersForTable(item);
+			children = await getColumnsForTable(item);
+			let folders = await makeFoldersForTable(item);
+			children.push(...folders);
 			break;
 		case "procsFolder":
 			//				getProcsFromObjectExplorer(item);
@@ -139,6 +142,7 @@ export async function getTablesForDatabase(databaseName: string, connectionProfi
 	try {
 		let tableListSql = `SELECT SCHEMA_NAME(schema_id) AS [Schema], name FROM sys.objects WHERE type = 'U' ORDER BY [Schema], name;`;
 		let tablesList = await getItemsFromConnection(tableListSql, databaseName, "table", connectionProfile!);
+		console.log("tablesList: ", tablesList);
 		result = separateIntoSchemas(tablesList, "tablesSchemaFolder");
 	} catch (error) {
 		console.error('Exception ' + error);
@@ -192,7 +196,7 @@ export function separateIntoSchemas(itemsIn: SchemaItem[], foldersItemType: stri
 	let allSchemas = itemsIn.map((x) => { return x.schemaName; });
 	let schemas = [...new Set(allSchemas)];
 	let sampleItem = itemsIn[0];
-
+	console.log("tables in:", itemsIn);
 	schemas.forEach((schemaName) => {
 		let thisSchemaFolder = new SchemaItem(schemaName, schemaName, sampleItem.databaseName, foldersItemType, ITEM_COLLAPSED, sampleItem.connectionProfile);
 		let theseItems = itemsIn.filter((f) => { return f.schemaName === schemaName; });
@@ -206,10 +210,10 @@ export function separateIntoSchemas(itemsIn: SchemaItem[], foldersItemType: stri
 
 function makeFoldersForTable(parent: SchemaItem): Promise<SchemaItem[]> {
 	let result: SchemaItem[] = new Array();
-	let columnsFolder = new SchemaItem(parent.objectName, parent.schemaName, parent.databaseName, "columnsFolder", ITEM_COLLAPSED, parent.connectionProfile);
+	//let columnsFolder = new SchemaItem(parent.objectName, parent.schemaName, parent.databaseName, "columnsFolder", ITEM_COLLAPSED, parent.connectionProfile);
 	let keysFolder = new SchemaItem(parent.objectName, parent.schemaName, parent.databaseName, "keysFolder", ITEM_COLLAPSED, parent.connectionProfile);
 
-	result.push(columnsFolder);
+	//result.push(columnsFolder);
 	result.push(keysFolder);
 
 	return new Promise<SchemaItem[]>((resolve, reject) => {
@@ -259,6 +263,10 @@ async function getColumnsForTable(table: SchemaItem): Promise<SchemaItem[]> {
 			col.numericScale = parseInt(x[9].displayValue);
 			col.datetimePrecision = parseInt(x[10].displayValue);
 			col.characterSetName = x[11].displayValue;
+
+			col.label = makeColumnLabel(col);
+			col.iconPath = makeIconPath(determineColumnIcon(col));
+
 			results.push(col);
 		});
 	}
@@ -266,4 +274,26 @@ async function getColumnsForTable(table: SchemaItem): Promise<SchemaItem[]> {
 	return new Promise<SchemaItem[]>((resolve, reject) => {
 		resolve(results);
 	});
+}
+
+function makeColumnLabel(col: ColumnItem): string {
+	let description = `${col.dataType}`;
+	let result = `${col.objectName} `;
+
+	description = (col.isPK) ? `PK, ${description}` : description;
+	description = (col.dataType.toUpperCase().indexOf("VARCHAR") > -1) ? `${description}(${col.characterMaximumLength})` : description;
+	description = (col.isNullable) ? `${description}, NULL` : `${description}, NOT NULL`;
+
+	result = `${result} (${description})`;
+
+	return result;
+}
+
+function determineColumnIcon(col: ColumnItem): string {
+	let result = "icon-column.svg";
+
+	result = (col.isPK) ? "icon-primary-key.svg" : result;
+	result = (col.isFK) ? "icon-foreign-key.svg" : result;
+
+	return result;
 }

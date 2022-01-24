@@ -4,8 +4,17 @@ import path = require('path');
 import { makeIconPath } from './IconUtils';
 
 export default class SchemaItem extends vscode.TreeItem {
+	private _iconName: string = "";
+
 	public children: SchemaItem[] = new Array();
-	public iconName: string = "";
+
+	public get iconName() {
+		return this._iconName;
+	}
+
+	public set iconName(val) {
+		this._iconName = val;
+	}
 
 	public getChildren(): SchemaItem[] {
 		return this.children;
@@ -41,21 +50,6 @@ export default class SchemaItem extends vscode.TreeItem {
 		}
 		else {
 			this.label = this.objectName;
-		}
-
-		switch (this.itemType) {
-			case "connection":
-				this.iconPath = makeIconPath("icon-server.svg");
-				break;
-			case "database":
-				this.iconPath = makeIconPath("icon-database.svg");
-				break;
-			case "proc":
-				this.iconPath = makeIconPath("icon-stored-procedure.svg");
-				break;
-			case "table":
-				this.iconPath = makeIconPath("icon-table.svg");
-				break;
 		}
 	};
 }
