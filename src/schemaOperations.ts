@@ -225,26 +225,38 @@ async function getColumnsForTable(table: SchemaItem): Promise<SchemaItem[]> {
 	let results: SchemaItem[] = new Array();
 
 	let colSql = `SELECT 
-					COLUMN_NAME, 
-					ORDINAL_POSITION, 
-					COLUMN_DEFAULT, 
-					IS_NULLABLE, 
-					DATA_TYPE, 
-					CHARACTER_MAXIMUM_LENGTH,
-					CHARACTER_OCTET_LENGTH,
-					NUMERIC_PRECISION,
-					NUMERIC_PRECISION_RADIX,
-					NUMERIC_SCALE,
-					DATETIME_PRECISION,
-					CHARACTER_SET_NAME
+					c.COLUMN_NAME, 
+					c.ORDINAL_POSITION, 
+					c.COLUMN_DEFAULT, 
+					c.IS_NULLABLE, 
+					c.DATA_TYPE, 
+					c.CHARACTER_MAXIMUM_LENGTH,
+					c.CHARACTER_OCTET_LENGTH,
+					c.NUMERIC_PRECISION,
+					c.NUMERIC_PRECISION_RADIX,
+					c.NUMERIC_SCALE,
+					c.DATETIME_PRECISION,
+					c.CHARACTER_SET_NAME,
+                    tc.CONSTRAINT_TYPE
 				FROM 
-					INFORMATION_SCHEMA.COLUMNS
+					INFORMATION_SCHEMA.COLUMNS c
+                LEFT JOIN 
+                    INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE ccu
+                    ON c.TABLE_NAME = ccu.TABLE_NAME
+                    AND c.TABLE_SCHEMA = ccu.TABLE_SCHEMA
+					AND c.COLUMN_NAME = ccu.COLUMN_NAME
+                LEFT JOIN 
+                    INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+                    ON c.COLUMN_NAME = ccu.COLUMN_NAME
+                    AND ccu.TABLE_NAME = tc.TABLE_NAME
+                    AND ccu.TABLE_SCHEMA = tc.TABLE_SCHEMA
+                    AND ccu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
 				WHERE
-					TABLE_SCHEMA = '${table.schemaName}'
+					c.TABLE_SCHEMA = '${table.schemaName}'
 				AND 
-					TABLE_NAME = '${table.objectName}'
+					c.TABLE_NAME = '${table.objectName}'
 				ORDER BY 
-					ORDINAL_POSITION;`;
+					c.ORDINAL_POSITION;`;
 
 	let queryResults = await DAL.runQueryWithConnection(colSql, table.connectionProfile!);
 
@@ -263,6 +275,8 @@ async function getColumnsForTable(table: SchemaItem): Promise<SchemaItem[]> {
 			col.numericScale = parseInt(x[9].displayValue);
 			col.datetimePrecision = parseInt(x[10].displayValue);
 			col.characterSetName = x[11].displayValue;
+			col.isPK = (x[12].displayValue === "PRIMARY KEY");
+			col.isFK = (x[12].displayValue === "FOREIGN KEY");
 
 			col.label = makeColumnLabel(col);
 			col.iconPath = makeIconPath(determineColumnIcon(col));
