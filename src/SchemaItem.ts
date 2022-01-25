@@ -38,18 +38,7 @@ export default class SchemaItem extends vscode.TreeItem {
 		this.contextValue = itemType;
 		this.connectionProfile = connectionProfile;
 		this.databaseName = databaseName;
+		this.label = this.objectName;
 
-		if (itemType === "proc" || itemType === "table") {
-			this.label = this.schemaName + '.' + this.objectName;
-		} else if (this.itemType === "schema") {
-			this.label = this.schemaName;
-		} else if (this.itemType === "columnsFolder") {
-			this.label = "Columns";
-		} else if (this.itemType === "keysFolder") {
-			this.label = "Keys";
-		}
-		else {
-			this.label = this.objectName;
-		}
 	};
 }

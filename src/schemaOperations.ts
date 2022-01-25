@@ -87,6 +87,7 @@ export async function getConnections(): Promise<SchemaItem[]> {
 			let thisConn = conns[i];
 			if (activeConnectionIds.includes(thisConn.connectionId)) {
 				let connectionItem: SchemaItem = new SchemaItem(thisConn.serverName, "", "", "connection", ITEM_COLLAPSED, thisConn);
+				connectionItem.label = thisConn.serverName;
 				items.push(connectionItem);
 			}
 		};
@@ -155,8 +156,8 @@ export async function getTablesForDatabase(databaseName: string, connectionProfi
 }
 
 export async function getProcsForDatabase(databaseName: string, connectionProfile: azdata.connection.ConnectionProfile): Promise<SchemaItem[]> {
-	let tableListSql = `SELECT ROUTINE_SCHEMA, ROUTINE_NAME, ROUTINE_DEFINITION FROM ${databaseName}.INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_TYPE = 'PROCEDURE';`;
-	let procs = await getItemsFromConnection(tableListSql, databaseName, "proc", connectionProfile!);
+	let procListSql = `SELECT ROUTINE_SCHEMA, ROUTINE_NAME, ROUTINE_DEFINITION FROM ${databaseName}.INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_TYPE = 'PROCEDURE';`;
+	let procs = await getItemsFromConnection(procListSql, databaseName, "proc", connectionProfile!);
 	let result = separateIntoSchemas(procs, "procsSchemaFolder");
 
 	return new Promise<SchemaItem[]>((resolve, reject) => {
@@ -165,8 +166,8 @@ export async function getProcsForDatabase(databaseName: string, connectionProfil
 }
 
 export async function getViewsForDatabase(databaseName: string, connectionProfile: azdata.connection.ConnectionProfile): Promise<SchemaItem[]> {
-	let tableListSql = `SELECT SCHEMA_NAME(schema_id) AS [Schema], name FROM sys.objects WHERE type = 'V' ORDER BY [Schema], name;`;
-	let result = await getItemsFromConnection(tableListSql, databaseName, "view", connectionProfile!);
+	let viewListSql = `SELECT SCHEMA_NAME(schema_id) AS [Schema], name FROM sys.objects WHERE type = 'V' ORDER BY [Schema], name;`;
+	let result = await getItemsFromConnection(viewListSql, databaseName, "view", connectionProfile!);
 
 	return new Promise<SchemaItem[]>((resolve, reject) => {
 		resolve(result);
@@ -181,6 +182,7 @@ export async function getItemsFromConnection(itemListSql: string, dbName: string
 	try {
 		qResult.rows.map((r) => {
 			let item = new SchemaItem(r[1].displayValue, r[0].displayValue, dbName, itemType, ITEM_COLLAPSED, conn);
+			item.label = `${r[0].displayValue}.${r[1].displayValue}`;
 			myItems.push(item);
 		});
 	} catch (err) {
@@ -210,10 +212,8 @@ export function separateIntoSchemas(itemsIn: SchemaItem[], foldersItemType: stri
 
 function makeFoldersForTable(parent: SchemaItem): Promise<SchemaItem[]> {
 	let result: SchemaItem[] = new Array();
-	//let columnsFolder = new SchemaItem(parent.objectName, parent.schemaName, parent.databaseName, "columnsFolder", ITEM_COLLAPSED, parent.connectionProfile);
 	let keysFolder = new SchemaItem(parent.objectName, parent.schemaName, parent.databaseName, "keysFolder", ITEM_COLLAPSED, parent.connectionProfile);
-
-	//result.push(columnsFolder);
+	keysFolder.label = "Keys";
 	result.push(keysFolder);
 
 	return new Promise<SchemaItem[]>((resolve, reject) => {
@@ -304,9 +304,9 @@ function makeColumnLabel(col: ColumnItem): string {
 }
 
 function determineColumnIcon(col: ColumnItem): string {
-	let result = "icon-column.svg";
+	let result = "icon-dot.svg";
 
-	result = (col.isPK) ? "icon-primary-key.svg" : result;
+	result = (col.isPK) ? "icon-key.svg" : result;
 	result = (col.isFK) ? "icon-foreign-key.svg" : result;
 
 	return result;
