@@ -1,8 +1,6 @@
 import * as vscode from 'vscode';
 import * as azdata from 'azdata';
 import SchemaItem from './SchemaItem';
-import path = require('path');
-import { makeIconPath } from './IconUtils';
 
 type ColumnItemModified = Omit<SchemaItem, "label">;
 

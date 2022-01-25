@@ -7,8 +7,6 @@ import * as DAL from './SchemaTreeDataAccessLayer';
 import SchemaItem from './schemaItem';
 import { getProcDefinition, getTableDefinition } from './definitionsOperations';
 import ColumnItem from './ColumnItem';
-import { cpuUsage } from 'process';
-import { parse } from 'path';
 import { makeIconPath } from './IconUtils';
 
 const nodesToSkip = ["Service Broker", "Storage", "Security"];
@@ -88,6 +86,7 @@ export async function getConnections(): Promise<SchemaItem[]> {
 			if (activeConnectionIds.includes(thisConn.connectionId)) {
 				let connectionItem: SchemaItem = new SchemaItem(thisConn.serverName, "", "", "connection", ITEM_COLLAPSED, thisConn);
 				connectionItem.label = thisConn.serverName;
+				connectionItem.iconPath = new vscode.ThemeIcon("server");
 				items.push(connectionItem);
 			}
 		};
@@ -106,6 +105,10 @@ export async function makeFoldersForDatabase(databaseName: string, connectionPro
 	let tblFolder = new SchemaItem("Tables", "", databaseName, "tablesFolder", ITEM_COLLAPSED, connectionProfile);
 	let viewsFolder = new SchemaItem("Views", "", databaseName, "viewsFolder", ITEM_COLLAPSED, connectionProfile);
 	let procsFolder = new SchemaItem("Procs", "", databaseName, "procsFolder", ITEM_COLLAPSED, connectionProfile);
+
+	// tblFolder.iconPath = new vscode.ThemeIcon("table");
+	// viewsFolder.iconPath = new vscode.ThemeIcon("versions");
+	// procsFolder.iconPath = new vscode.ThemeIcon("server-process");
 
 	folders.push(tblFolder);
 	folders.push(viewsFolder);
@@ -126,6 +129,7 @@ export async function getDatabasesFromConnection(conn: azdata.connection.Connect
 		qResult.rows.map((r) => {
 			let dbName = r[0].displayValue;
 			let item = new SchemaItem(dbName, "", dbName, "database", ITEM_COLLAPSED, conn);
+			item.iconPath = new vscode.ThemeIcon("database");
 			dbFolders.push(item);
 		});
 	} catch (err) {
@@ -143,6 +147,9 @@ export async function getTablesForDatabase(databaseName: string, connectionProfi
 	try {
 		let tableListSql = `SELECT SCHEMA_NAME(schema_id) AS [Schema], name FROM sys.objects WHERE type = 'U' ORDER BY [Schema], name;`;
 		let tablesList = await getItemsFromConnection(tableListSql, databaseName, "table", connectionProfile!);
+
+		tablesList = <SchemaItem[]>tablesList.map((t) => { return { iconPath: new vscode.ThemeIcon("table"), ...t }; });
+
 		console.log("tablesList: ", tablesList);
 		result = separateIntoSchemas(tablesList, "tablesSchemaFolder");
 	} catch (error) {
@@ -160,6 +167,9 @@ export async function getProcsForDatabase(databaseName: string, connectionProfil
 	let procs = await getItemsFromConnection(procListSql, databaseName, "proc", connectionProfile!);
 	let result = separateIntoSchemas(procs, "procsSchemaFolder");
 
+	result = <SchemaItem[]>result.map((t) => { return { iconPath: new vscode.ThemeIcon("server-process"), ...t }; });
+
+
 	return new Promise<SchemaItem[]>((resolve, reject) => {
 		resolve(result);
 	});
@@ -168,6 +178,9 @@ export async function getProcsForDatabase(databaseName: string, connectionProfil
 export async function getViewsForDatabase(databaseName: string, connectionProfile: azdata.connection.ConnectionProfile): Promise<SchemaItem[]> {
 	let viewListSql = `SELECT SCHEMA_NAME(schema_id) AS [Schema], name FROM sys.objects WHERE type = 'V' ORDER BY [Schema], name;`;
 	let result = await getItemsFromConnection(viewListSql, databaseName, "view", connectionProfile!);
+
+	result = <SchemaItem[]>result.map((t) => { return { iconPath: new vscode.ThemeIcon("multiple-windows"), ...t }; });
+
 
 	return new Promise<SchemaItem[]>((resolve, reject) => {
 		resolve(result);
@@ -279,7 +292,7 @@ async function getColumnsForTable(table: SchemaItem): Promise<SchemaItem[]> {
 			col.isFK = (x[12].displayValue === "FOREIGN KEY");
 
 			col.label = makeColumnLabel(col);
-			col.iconPath = makeIconPath(determineColumnIcon(col));
+			col.iconPath = determineColumnIcon(col);
 
 			results.push(col);
 		});
@@ -303,11 +316,11 @@ function makeColumnLabel(col: ColumnItem): string {
 	return result;
 }
 
-function determineColumnIcon(col: ColumnItem): string {
-	let result = "icon-dot.svg";
+function determineColumnIcon(col: ColumnItem): vscode.ThemeIcon {
+	let result = new vscode.ThemeIcon("debug-stackframe-dot");
 
-	result = (col.isPK) ? "icon-key.svg" : result;
-	result = (col.isFK) ? "icon-foreign-key.svg" : result;
+	result = (col.isPK) ? new vscode.ThemeIcon("key") : result;
+	result = (col.isFK) ? new vscode.ThemeIcon("combine") : result;
 
 	return result;
 }
