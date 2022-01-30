@@ -43,8 +43,20 @@ export async function selectTop1000(item: SchemaItem) {
 
 }
 
-export async function editTableData(item: SchemaItem) {
+export async function newQuery(item: SchemaItem) {
+	let oeContext = definitionsOps.getObjectExplorerActionsContext(item);
+	await vscode.commands.executeCommand("objectExplorer.newQuery", oeContext);
 
+
+	//	let doc = await azdata.queryeditor.openQueryDocument({ content: "-- Make sure you're in the right database! --" }, item.connectionProfile?.providerId);
+	//	await azdata.queryeditor.connect(doc.uri, item.connectionProfile!.connectionId);
+}
+
+export async function editTableData(item: SchemaItem) {
+	console.log("edit table data:", item);
+	let oeContext = await definitionsOps.getObjectExplorerActionsContext(item);
+	console.log("context:", oeContext);
+	await vscode.commands.executeCommand("explorer.editData", oeContext);
 }
 
 export async function refreshItem(item: SchemaItem) {

@@ -19,6 +19,8 @@ export function activate(context: vscode.ExtensionContext) {
 
     let connectionList: string[] = new Array();
 
+
+
     initTreeStructure();
 
     azdata.connection.registerConnectionEventListener({
@@ -75,7 +77,6 @@ export function activate(context: vscode.ExtensionContext) {
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('schematree.refresh', (myItem: SchemaItem) => {
-        // contextMenuOperations.refreshItem(myItem);
         myProvider.refresh();
     }));
 
@@ -87,10 +88,15 @@ export function activate(context: vscode.ExtensionContext) {
         contextMenuOperations.editTableData(myItem);
     }));
 
+    context.subscriptions.push(vscode.commands.registerCommand('schematree.newQuery', (myItem: SchemaItem) => {
+        contextMenuOperations.newQuery(myItem);
+    }));
+
     function initTreeStructure() {
         vscode.window.createTreeView('schematree-view', {
             treeDataProvider: myProvider
         });
+
 
     }
 }

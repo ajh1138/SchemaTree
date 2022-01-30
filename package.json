@@ -61,10 +61,24 @@
 			{
 				"command": "schematree.editData",
 				"title": "Edit Data"
+			},
+			{
+				"command": "schematree.newQuery",
+				"title": "New Query..."
 			}
 		],
 		"menus": {
+			"view/title": [
+				{
+					"command": "schematree.refresh",
+					"when": "view == schematree-view"
+				}
+			],
 			"view/item/context": [
+				{
+					"command": "schematree.newQuery",
+					"when": "viewItem == database"
+				},
 				{
 					"command": "schematree.scriptAsCreate",
 					"when": "viewItem == proc || viewItem == table"
