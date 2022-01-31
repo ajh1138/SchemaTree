@@ -16,6 +16,8 @@ const ITEM_NONE = vscode.TreeItemCollapsibleState.None;
 const ITEM_EXPANDED = vscode.TreeItemCollapsibleState.Expanded;
 
 
+// TODO: all the SchemaItem "types" should be cased the same as the OE Node "types"
+
 export async function getChildrenOfItem(item: SchemaItem): Promise<SchemaItem[]> {
 	let children: SchemaItem[] = new Array<SchemaItem>();
 
@@ -101,7 +103,7 @@ export async function getConnections(): Promise<SchemaItem[]> {
 
 export async function makeFoldersForDatabase(databaseName: string, connectionProfile: azdata.connection.ConnectionProfile | undefined): Promise<SchemaItem[]> {
 	let folders: SchemaItem[] = new Array<SchemaItem>();
-
+	console.log("conn profile", connectionProfile);
 	let tblFolder = new SchemaItem("Tables", "", databaseName, "tablesFolder", ITEM_COLLAPSED, connectionProfile);
 	let viewsFolder = new SchemaItem("Views", "", databaseName, "viewsFolder", ITEM_COLLAPSED, connectionProfile);
 	let procsFolder = new SchemaItem("Procs", "", databaseName, "procsFolder", ITEM_COLLAPSED, connectionProfile);
@@ -122,7 +124,7 @@ export async function makeFoldersForDatabase(databaseName: string, connectionPro
 export async function getDatabasesFromConnection(conn: azdata.connection.ConnectionProfile): Promise<SchemaItem[]> {
 	let dbFolders: SchemaItem[] = new Array();
 	let dbListSql = "select [name] from sys.databases WHERE name NOT IN('master', 'tempdb', 'model', 'msdb') order by name;";
-
+	console.log("getting database for conn ", conn);
 	try {
 		let qResult = await DAL.runQueryWithConnection(dbListSql, conn);
 
@@ -130,6 +132,7 @@ export async function getDatabasesFromConnection(conn: azdata.connection.Connect
 			let dbName = r[0].displayValue;
 			let item = new SchemaItem(dbName, "", dbName, "database", ITEM_COLLAPSED, conn);
 			item.iconPath = new vscode.ThemeIcon("database");
+			console.log("db item", item);
 			dbFolders.push(item);
 		});
 	} catch (err) {

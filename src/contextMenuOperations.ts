@@ -43,9 +43,9 @@ export async function selectTop1000(item: SchemaItem) {
 
 }
 
-export async function newQuery(item: SchemaItem) {
+export async function newQuery(item: SchemaItem, accessor: any) {
 	let oeContext = definitionsOps.getObjectExplorerActionsContext(item);
-	await vscode.commands.executeCommand("objectExplorer.newQuery", oeContext);
+	await vscode.commands.executeCommand("objectExplorer.newQuery", accessor, oeContext);
 
 
 	//	let doc = await azdata.queryeditor.openQueryDocument({ content: "-- Make sure you're in the right database! --" }, item.connectionProfile?.providerId);

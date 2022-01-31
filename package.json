@@ -65,13 +65,21 @@
 			{
 				"command": "schematree.newQuery",
 				"title": "New Query..."
+			},
+			{
+				"command": "schematree.whatever",
+				"title": "whatever"
 			}
 		],
 		"menus": {
 			"view/title": [
 				{
-					"command": "schematree.refresh",
-					"when": "view == schematree-view"
+					"command": "schematree.refresh"
+				}
+			],
+			"objectExplorer/item/context": [
+				{
+					"command": "schematree.whatever"
 				}
 			],
 			"view/item/context": [

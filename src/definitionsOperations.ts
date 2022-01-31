@@ -3,6 +3,7 @@ import * as azdata from 'azdata';
 
 import SchemaItem from './schemaItem';
 import { ObjectExplorerNodeToNodeInfo } from './objectExplorerMisc';
+import { compileFunction } from 'vm';
 
 export const getTableDefinition = async (item: SchemaItem) => {
 	console.log("getting table def...");
@@ -37,12 +38,35 @@ export const getProcDefinition = async (item: SchemaItem) => {
 	}
 };
 
+// ************** TODO: yes this is gross.  trying to get something else to work real quick... *******************
+export const getObjectExplorerNodeForTable = async (item: SchemaItem) => {
+	console.log("getting node for table");
+	let foundNodes = await azdata.objectexplorer.findNodes(item.connectionProfile!.connectionId, "Table", item.schemaName, item.objectName, item.databaseName, []);
+	let myOeNode = foundNodes[0];
+
+	return new Promise<azdata.objectexplorer.ObjectExplorerNode>((resolve, reject) => {
+		resolve(myOeNode);
+	});
+};
+
+export const getObjectExplorerNodeForDatabase = async (item: SchemaItem) => {
+	let foundNodes = await azdata.objectexplorer.findNodes(item.connectionProfile!.connectionId, "Database", "", item.objectName, "", [""]);
+	console.log("db item:", item);
+	console.log("connection:", item.connectionProfile);
+	console.log("nodes?", foundNodes);
+	let myOeNode = foundNodes[0];
+	console.log("myOeNode", myOeNode);
+	return new Promise<azdata.objectexplorer.ObjectExplorerNode>((resolve, reject) => {
+		resolve(myOeNode);
+	});
+};
+
+// *********** TODO: gross, gross, gross ****************
 export const getObjectExplorerActionsContext = async (item: SchemaItem) => {
 	try {
-		let oeItemType = (item.itemType === "table") ? "Table" : "Database";
+		console.log("obj item:", item);
+		let myOeNode = (item.itemType === "table") ? await getObjectExplorerNodeForTable(item) : await getObjectExplorerNodeForDatabase(item);
 
-		let foundNodes = await azdata.objectexplorer.findNodes(item.connectionProfile!.connectionId, oeItemType, item.schemaName, item.objectName, item.databaseName, [""]);
-		let myOeNode = foundNodes[0];
 		let nodeInfo = ObjectExplorerNodeToNodeInfo(myOeNode);
 		let oeActionsContext: azdata.ObjectExplorerContext = {
 			isConnectionNode: false,

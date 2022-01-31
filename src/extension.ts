@@ -21,6 +21,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 
 
+
     initTreeStructure();
 
     azdata.connection.registerConnectionEventListener({
@@ -88,16 +89,21 @@ export function activate(context: vscode.ExtensionContext) {
         contextMenuOperations.editTableData(myItem);
     }));
 
-    context.subscriptions.push(vscode.commands.registerCommand('schematree.newQuery', (myItem: SchemaItem) => {
-        contextMenuOperations.newQuery(myItem);
+    context.subscriptions.push(vscode.commands.registerCommand('schematree.whatever', (myItem: azdata.objectexplorer.ObjectExplorerNode) => {
+        console.log("oe node", myItem);
+        // contextMenuOperations.editTableData(myItem);
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand('schematree.newQuery', (myItem: SchemaItem, accessor: any) => {
+        console.log("accessor", accessor);
+        console.log("myitem", myItem);
+        contextMenuOperations.newQuery(myItem, accessor);
     }));
 
     function initTreeStructure() {
         vscode.window.createTreeView('schematree-view', {
             treeDataProvider: myProvider
         });
-
-
     }
 }
 
