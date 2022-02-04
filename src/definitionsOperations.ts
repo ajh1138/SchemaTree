@@ -49,23 +49,24 @@ export const getObjectExplorerNodeForTable = async (item: SchemaItem) => {
 	});
 };
 
-export const getObjectExplorerNodeForDatabase = async (item: SchemaItem) => {
-	let foundNodes = await azdata.objectexplorer.findNodes(item.connectionProfile!.connectionId, "Database", "", item.objectName, "", [""]);
-	console.log("db item:", item);
-	console.log("connection:", item.connectionProfile);
-	console.log("nodes?", foundNodes);
-	let myOeNode = foundNodes[0];
-	console.log("myOeNode", myOeNode);
-	return new Promise<azdata.objectexplorer.ObjectExplorerNode>((resolve, reject) => {
-		resolve(myOeNode);
-	});
-};
+// export const getObjectExplorerNodeForDatabase = async (item: SchemaItem) => {
+// 	item.connectionProfile!.databaseName = item.objectName;
+// 	let foundNodes = await azdata.objectexplorer.findNodes(item.connectionProfile!.connectionId, "Database", "", item.objectName, "", [""]);
+// 	console.log("db item:", item);
+// 	console.log("connection:", item.connectionProfile);
+// 	console.log("nodes?", foundNodes);
+// 	let myOeNode = foundNodes[0];
+// 	console.log("myOeNode", myOeNode);
+// 	return new Promise<azdata.objectexplorer.ObjectExplorerNode>((resolve, reject) => {
+// 		resolve(myOeNode);
+// 	});
+// };
 
 // *********** TODO: gross, gross, gross ****************
 export const getObjectExplorerActionsContext = async (item: SchemaItem) => {
 	try {
 		console.log("obj item:", item);
-		let myOeNode = (item.itemType === "table") ? await getObjectExplorerNodeForTable(item) : await getObjectExplorerNodeForDatabase(item);
+		let myOeNode = (item.itemType === "table") ? await getObjectExplorerNodeForTable(item) : await getObjectExplorerNodeForTable(item); // : await getObjectExplorerNodeForDatabase(item);
 
 		let nodeInfo = ObjectExplorerNodeToNodeInfo(myOeNode);
 		let oeActionsContext: azdata.ObjectExplorerContext = {

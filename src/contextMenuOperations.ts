@@ -44,12 +44,15 @@ export async function selectTop1000(item: SchemaItem) {
 }
 
 export async function newQuery(item: SchemaItem, accessor: any) {
-	let oeContext = definitionsOps.getObjectExplorerActionsContext(item);
-	await vscode.commands.executeCommand("objectExplorer.newQuery", accessor, oeContext);
+	// let oeContext = definitionsOps.getObjectExplorerActionsContext(item);
+	// await vscode.commands.executeCommand("objectExplorer.newQuery", accessor, oeContext);
+	let connUri = await azdata.connection.getUriForConnection(item.connectionProfile!.connectionId);
+	let dProvider = await azdata.dataprotocol.getProvider<azdata.ConnectionProvider>(item.connectionProfile!.providerId, azdata.DataProviderType.ConnectionProvider);
+	await dProvider.changeDatabase(connUri, item.databaseName);
+	let doc = await azdata.queryeditor.openQueryDocument({ content: "-- Make sure you're in the right database! --" }, item.connectionProfile?.providerId);
 
+	await azdata.queryeditor.connect(doc.uri, item.connectionProfile!.connectionId);
 
-	//	let doc = await azdata.queryeditor.openQueryDocument({ content: "-- Make sure you're in the right database! --" }, item.connectionProfile?.providerId);
-	//	await azdata.queryeditor.connect(doc.uri, item.connectionProfile!.connectionId);
 }
 
 export async function editTableData(item: SchemaItem) {
